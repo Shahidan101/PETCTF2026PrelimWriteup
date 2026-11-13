@@ -20,7 +20,7 @@ Challenges are organized according to their respective locations, with each chal
 
 ## Competition Results
 
-Our team, **Honeypot_v2**, secured **7th place** in PETRONAS CTF 2026.
+Our team, **Honeypot_v2**, secured **7th place** in PETRONAS CTF 2026 preliminary round.
 
 | Rank | Team | Score |
 |:---:|---|---:|
